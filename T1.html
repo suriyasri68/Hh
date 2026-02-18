@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HabitVerse</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+font-family:Arial;
+height:100vh;
+overflow:hidden;
+}
+
+/* Animated Bubble Background */
+.background{
+position:fixed;
+width:100%;
+height:100%;
+background: radial-gradient(circle at top,#1a2a6c,#b21f1f,#fdbb2d);
+overflow:hidden;
+}
+
+.bubble{
+position:absolute;
+bottom:-100px;
+background:rgba(255,255,255,0.15);
+border-radius:50%;
+animation: float 20s infinite linear;
+}
+
+@keyframes float{
+0%{transform:translateY(0);}
+100%{transform:translateY(-120vh);}
+}
+
+/* Login Card */
+.login-box{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:rgba(255,255,255,0.15);
+backdrop-filter: blur(12px);
+padding:40px;
+border-radius:20px;
+text-align:center;
+box-shadow:0 0 25px rgba(0,0,0,0.4);
+color:white;
+animation: fadeIn 1.5s;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translate(-50%,-60%);}
+to{opacity:1;transform:translate(-50%,-50%);}
+}
+
+.login-box h1{
+font-size:32px;
+margin-bottom:10px;
+}
+
+.login-box p{
+font-size:14px;
+margin-bottom:20px;
+opacity:0.8;
+}
+
+input,button{
+padding:12px;
+border:none;
+border-radius:10px;
+margin:8px;
+width:80%;
+}
+
+input{outline:none;}
+
+button{
+background:#ff9800;
+color:white;
+cursor:pointer;
+font-size:16px;
+transition:0.3s;
+}
+
+button:hover{
+background:#ff5722;
+transform:scale(1.05);
+}
+
+/* Main App */
+#appPage{
+display:none;
+padding:20px;
+color:white;
+background:linear-gradient(to right,#141e30,#243b55);
+min-height:100vh;
+}
+
+.habit{
+background:rgba(255,255,255,0.2);
+padding:10px;
+margin:10px;
+border-radius:10px;
+}
+
+.day{
+width:30px;height:30px;
+display:inline-block;
+margin:3px;
+border-radius:5px;
+}
+.happy{background:#4caf50;}
+.normal{background:#ffc107;}
+.sad{background:#f44336;}
+
+progress{width:80%;height:20px;}
+
+.logout{
+position:fixed;
+top:10px;
+right:10px;
+background:red;
+color:white;
+padding:10px;
+border:none;
+border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="background" id="loginPage">
+  <div class="bubble" style="width:80px;height:80px;left:10%;animation-duration:18s;"></div>
+  <div class="bubble" style="width:120px;height:120px;left:30%;animation-duration:22s;"></div>
+  <div class="bubble" style="width:60px;height:60px;left:50%;animation-duration:15s;"></div>
+  <div class="bubble" style="width:100px;height:100px;left:70%;animation-duration:25s;"></div>
+  <div class="bubble" style="width:90px;height:90px;left:85%;animation-duration:20s;"></div>
+
+  <div class="login-box">
+    <h1>🌟 HabitVerse</h1>
+    <p>Turn your habits into a game of success</p>
+    <input type="text" id="username" placeholder="Enter your name">
+    <br>
+    <button onclick="login()">Enter HabitVerse 🚀</button>
+  </div>
+</div>
+
+<div id="appPage">
+<button class="logout" onclick="logout()">Logout</button>
+
+<h1>Welcome <span id="userDisplay"></span> 👋</h1>
+
+<input type="text" id="habitInput" placeholder="Enter habit">
+<select id="mood">
+<option value="happy">😄 Happy</option>
+<option value="normal">😐 Normal</option>
+<option value="sad">😢 Sad</option>
+</select>
+<button onclick="addHabit()">Add</button>
+
+<h3>🔥 Streak: <span id="streak">0</span></h3>
+
+<div id="habits"></div>
+
+<h2>🎮 Level: <span id="level">1</span></h2>
+<progress id="xpBar" value="0" max="100"></progress>
+
+<h2>🎨 Calendar</h2>
+<div id="calendar"></div>
+
+<h2>🤖 AI Coach</h2>
+<p id="aiMessage"></p>
+
+<h2>📊 Progress</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+let user=localStorage.getItem("user");
+let habits=JSON.parse(localStorage.getItem("habits"))||[];
+let days=JSON.parse(localStorage.getItem("days"))||{};
+let xp=Number(localStorage.getItem("xp"))||0;
+let level=Number(localStorage.getItem("level"))||1;
+
+function login(){
+let name=document.getElementById("username").value;
+if(name==""){alert("Enter name");return;}
+localStorage.setItem("user",name);
+showApp();
+}
+
+function logout(){
+localStorage.removeItem("user");
+location.reload();
+}
+
+function showApp(){
+loginPage.style.display="none";
+appPage.style.display="block";
+userDisplay.innerText=user;
+display();
+}
+
+if(user) showApp();
+
+function addHabit(){
+let habit=habitInput.value;
+let mood=document.getElementById("mood").value;
+if(habit=="") return alert("Enter habit");
+
+habits.push({name:habit,mood:mood});
+let today=new Date().getDate();
+days[today]=mood;
+
+xp+=10;if(xp>=100){level++;xp=0;}
+saveData();display();
+habitInput.value="";
+}
+
+function saveData(){
+localStorage.setItem("habits",JSON.stringify(habits));
+localStorage.setItem("days",JSON.stringify(days));
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+}
+
+function calculateStreak(){
+let s=0;
+let t=new Date().getDate();
+for(let i=t;i>0;i--){
+if(days[i]) s++;
+else break;
+}
+return s;
+}
+
+function display(){
+habitsDiv=document.getElementById("habits");
+habitsDiv.innerHTML="";
+habits.forEach(h=>{
+habitsDiv.innerHTML+=`<div class="habit">🔥 ${h.name} | ${h.mood}</div>`;
+});
+level.innerText=level;
+xpBar.value=xp;
+streak.innerText=calculateStreak();
+renderCalendar();aiCoach();updateChart();
+}
+
+function renderCalendar(){
+calendar.innerHTML="";
+for(let i=1;i<=30;i++){
+let d=document.createElement("div");
+d.className="day";
+if(days[i]) d.classList.add(days[i]);
+calendar.appendChild(d);
+}
+}
+
+function aiCoach(){
+let moods=Object.values(days);
+aiMessage.innerText=
+moods.includes("sad")?"🤖 Tomorrow is a fresh start 💪":
+moods.includes("happy")?"🤖 Your habits bring happiness 🌟":
+"🤖 Stay consistent 🚀";
+}
+
+function updateChart(){
+let happy=Object.values(days).filter(m=>m=="happy").length;
+let normal=Object.values(days).filter(m=>m=="normal").length;
+let sad=Object.values(days).filter(m=>m=="sad").length;
+
+let ctx=document.getElementById("chart").getContext("2d");
+if(window.myChart) window.myChart.destroy();
+window.myChart=new Chart(ctx,{
+type:"doughnut",
+data:{labels:["Happy","Normal","Sad"],
+datasets:[{data:[happy,normal,sad],
+backgroundColor:["green","yellow","red"]}]}
+});
+}
+</script>
+
+</body>
+</html>
